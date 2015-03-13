@@ -18,5 +18,9 @@ setup(
         keywords=("utils"),
         platforms="Independant",
         url="",
+        entry_points={'console_scripts': [
+            'auprober=cocommon.audio.auprober:main',
+            'wavanalyze=cocommon.audio.wavfile:main',
+            ]},
 
         install_requires=["requests>=2.3.0", "pexpect>=3.3", "ujson>=1.33"])
