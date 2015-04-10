@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 setup(
         name="cocommon",
-        version="0.9.1",
+        version="0.9.2",
         packages=find_packages(),
         zip_safe=False,
 
@@ -23,4 +23,7 @@ setup(
             'wavanalyze=cocommon.audio.wavfile:main',
             ]},
 
-        install_requires=["requests>=2.3.0", "pexpect>=3.3", "ujson>=1.33"])
+        install_requires=["requests>=2.3.0",
+                          "pexpect>=3.3",
+                          "ujson>=1.33",
+                          "hexdump>=3.2"])
