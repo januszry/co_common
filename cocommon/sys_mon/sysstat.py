@@ -1,4 +1,18 @@
 import subprocess
+import socket
+import fcntl
+import struct
+
+
+def get_ip_address(ifname):
+    """Get ip address by interface name
+
+    :param ifname: interface name"""
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    return socket.inet_ntoa(fcntl.ioctl(s.fileno(), 0x8915,
+                            struct.pack(
+                                '256s',
+                                ifname[:15].encode('utf-8')))[20:24])
 
 
 def read_cpu_usage():

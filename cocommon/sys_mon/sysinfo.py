@@ -11,9 +11,6 @@ import logging.handlers
 import time
 import pprint
 import traceback
-import socket
-import fcntl
-import struct
 
 from . import sysstat
 
@@ -52,6 +49,7 @@ def get_percent(adict):
 
 
 class SysMon(object):
+
     """A system info monitor.
 
     :param output: a dictionary for output as this module
@@ -78,11 +76,7 @@ class SysMon(object):
         """Get ip address by interface name
 
         :param ifname: interface name"""
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        return socket.inet_ntoa(fcntl.ioctl(s.fileno(), 0x8915,
-                                struct.pack(
-                                    '256s',
-                                    ifname[:15].encode('utf-8')))[20:24])
+        return sysstat.get_ip_address(ifname)
 
     def get_sys_info(self):
         """Get system infomation.
@@ -108,13 +102,13 @@ class SysMon(object):
 
         self.output.update({'cpu_info': get_percent(
             get_avg_by_sum(self._cpu_data, self._update_interval)),
-                            'mem_info': get_avg(self._mem_data),
-                            'disk_info': {k: get_avg(v)
-                                          for k, v in self._disk_data.items()},
-                            'network_info': {k: get_avg_by_sum(
-                                v, self._update_interval)
-                                for k, v in self._network_data.items()},
-                            })
+            'mem_info': get_avg(self._mem_data),
+            'disk_info': {k: get_avg(v)
+                          for k, v in self._disk_data.items()},
+            'network_info': {k: get_avg_by_sum(
+                             v, self._update_interval)
+                             for k, v in self._network_data.items()},
+        })
 
         self._logger.info(pprint.pformat(self.output))
         return self.output
@@ -133,6 +127,7 @@ class SysMon(object):
 
 
 class SystemInfoCollector(object):
+
     """Deprecated class, used in old projects"""
 
     def __init__(self):
