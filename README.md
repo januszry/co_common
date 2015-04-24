@@ -6,9 +6,11 @@ Consists of the following parts:
 * auconverter.py - converters, now only aac2m4a converter
 * auprober.py - prober with ffmpeg and mediainfo
 * wavfile.py - wave file analyzer
+* id3taggen.py - text id3tagger
 
 ## Quick Config (quick_config)
 * config_log.py - log parser
+* daemonize.py - unix daemon maker
 
 ## System Monitor for Linux (sys_mon)
 * sysinfo.py (entrance)
