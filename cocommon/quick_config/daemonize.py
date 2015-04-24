@@ -5,16 +5,22 @@ import os
 import time
 import atexit
 import signal
+import fcntl
+
+pid_file_dir = '/tmp'
 
 
 class Daemon:
 
     """A generic daemon class.
-    
-    Constructor takes path-to-pidfile, func, *args, **kwargs"""
 
-    def __init__(self, pidfile, func, *args, **kwargs):
-        self.pidfile = pidfile
+    Constructor takes process_name, func, *args, **kwargs."""
+
+    def __init__(self, process_name, func, *args, **kwargs):
+        if not os.path.isdir(pid_file_dir):
+            os.makedirs(pid_file_dir)
+        self.pidfile = os.path.join(
+            pid_file_dir, '{}.pid'.format(process_name))
         self.func = func
         self.args = args
         self.kwargs = kwargs
@@ -63,6 +69,11 @@ class Daemon:
 
         pid = str(os.getpid())
         with open(self.pidfile, 'w+') as f:
+            try:
+                fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except IOError:
+                print("Another instance already running, exit")
+                sys.exit(0)
             f.write(pid + '\n')
 
     def delpid(self):
