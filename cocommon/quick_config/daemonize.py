@@ -6,8 +6,9 @@ import time
 import atexit
 import signal
 import fcntl
+import pprint
 
-pid_file_dir = '/tmp'
+DEFAULT_PID_FILE_DIR = '/tmp'
 
 
 class Daemon:
@@ -17,13 +18,26 @@ class Daemon:
     Constructor takes process_name, func, *args, **kwargs."""
 
     def __init__(self, process_name, func, *args, **kwargs):
-        if not os.path.isdir(pid_file_dir):
-            os.makedirs(pid_file_dir)
+        """Takes following arguments:
+
+        :param process_name: pid file name will be <process_name>.pid
+        :param func: function to run.
+            note the function should handle with SIGTERM
+        :param pid_dir: optional"""
+        if 'pid_dir' in kwargs:
+            pid_dir = kwargs.pop('pid_dir')
+        else:
+            pid_dir = DEFAULT_PID_FILE_DIR
+        if not os.path.isdir(pid_dir):
+            os.makedirs(pid_dir)
         self.pidfile = os.path.join(
-            pid_file_dir, '{}.pid'.format(process_name))
+            pid_dir, '{}.pid'.format(process_name))
         self.func = func
         self.args = args
         self.kwargs = kwargs
+
+    def __str__(self):
+        return pprint.pformat(vars(self))
 
     def daemonize(self):
         """Deamonize class. UNIX double fork mechanism."""
