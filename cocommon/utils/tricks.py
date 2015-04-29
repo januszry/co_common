@@ -200,7 +200,7 @@ def do_host_paramiko(
     with open(os.path.join(log_dir, log_file), 'w') as f:
         r = rst_gen.RestructuredTextGenerator()
         for command in commands:
-            _, stdout, stderr = ssh.exec_command(command)
+            _, stdout, stderr = ssh.exec_command(command, timeout=timeout)
             f.write
             f.write(r.section_header(0, '{} - {}'.format(
                 command, seconds_to_timestr(time.time()))))
