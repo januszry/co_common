@@ -24,6 +24,7 @@ setup(
         ]},
 
     install_requires=["requests>=2.3.0",
+                      "paramiko>=1.15.2",
                       "pexpect>=3.3",
                       "ujson>=1.33",
                       "hexdump>=3.2"])

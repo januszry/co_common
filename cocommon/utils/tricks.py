@@ -19,6 +19,9 @@ import urllib.parse
 
 import pexpect
 import requests
+import paramiko
+
+from . import rst_gen
 
 
 SUBPROCESS_TIMEOUT_DEFAULT = 5
@@ -137,7 +140,14 @@ def url_fix(s):
     return urllib.parse.urlunsplit((scheme, netloc, path, qs, anchor))
 
 
-def do_host(host, username, password, commands=[], log_dir='.', timeout=30):
+def do_host(
+        host,
+        username,
+        password,
+        commands=[],
+        log_dir='.',
+        expect_done_sign=']#',
+        timeout=30):
     """Run a list of commands on a host."""
     logger = logging.getLogger(__name__)
     logger.info('ssh to %s:%s@%s', username, password, host)
@@ -146,7 +156,8 @@ def do_host(host, username, password, commands=[], log_dir='.', timeout=30):
     f = open(os.path.join(log_dir, '{}.log').format(host), 'w')
     child.logfile = f.buffer
 
-    i = child.expect([']#', '(yes/no)', 'assword:'], timeout=timeout)
+    i = child.expect(
+        [expect_done_sign, '(yes/no)', 'assword:'], timeout=timeout)
     if i == 0:
         logger.info('Certificated machine %s', host)
     elif i == 1:
@@ -159,14 +170,51 @@ def do_host(host, username, password, commands=[], log_dir='.', timeout=30):
         logger.info('Password certification at machine %s', host)
         time.sleep(0.7)
         child.sendline(password)
-    child.expect(']#', timeout=timeout)
+    child.expect(expect_done_sign, timeout=timeout)
     for cmd in commands:
         logger.info('Sending command %s', cmd)
         child.sendline(cmd)
-        child.expect(']#', timeout=timeout)
+        child.expect(expect_done_sign, timeout=timeout)
     child.sendline('exit')
     child.expect(pexpect.EOF)
     f.close()
+
+
+def do_host_paramiko(
+        host,
+        username,
+        password,
+        commands=[],
+        log_dir='.',
+        log_file=None,
+        port=22,
+        timeout=30):
+    """Run a list of commands on a remote host with paramiko."""
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.connect(host, port, username, password)
+    if log_file is None:
+        log_file = '{}.log'.format(host)
+    if not os.path.isdir(log_dir):
+        os.makedirs(log_dir)
+    with open(os.path.join(log_dir, log_file), 'w') as f:
+        r = rst_gen.RestructuredTextGenerator()
+        for command in commands:
+            _, stdout, stderr = ssh.exec_command(command)
+            f.write
+            f.write(r.section_header(0, '{} - {}'.format(
+                command, seconds_to_timestr(time.time()))))
+            f.write(r.section_header(1, 'stdout'))
+            lines = stdout.readlines()
+            if lines:
+                lines = [i[:-1] for i in lines]
+                f.write(r.source_code(*lines))
+            f.write(r.section_header(1, 'stderr'))
+            lines = stderr.readlines()
+            if lines:
+                lines = [i[:-1] for i in lines]
+                f.write(r.source_code(*lines))
+            f.write(r.end_of_block())
 
 
 def retry(retry_times, f, *args, **kwargs):
