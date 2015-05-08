@@ -15,13 +15,13 @@ import hashlib
 import glob
 import tempfile
 import pickle
-import urllib.parse
 
 import pexpect
 import requests
 import paramiko
 
 from . import rst_gen
+from .compat import urlparse, get_urlparsable_string
 
 
 SUBPROCESS_TIMEOUT_DEFAULT = 5
@@ -116,7 +116,7 @@ def is_ascii(s):
 
 
 def url_fix(s):
-    """Get a valid URL.
+    """Get a valid URL. Only for PY3.
 
     Sometimes you get an URL by a user that just isn't a real
     URL because it contains unsafe characters like ' ' and so on.  This
@@ -129,15 +129,11 @@ def url_fix(s):
     >>> url_fix('mmst://60.21.157.2/丹东电台都市频率')
     'mmst://60.21.157.2/%E4%B8%B9%E4%B8%9C%E7%94%B5%E5%8F%B0%E9%83%BD%E5%B8%82%E9%A2%91%E7%8E%87'
     """
-    if isinstance(s, bytes):
-        try:
-            s = s.decode('utf-8')
-        except:
-            s = s.decode('gbk')
-    scheme, netloc, path, qs, anchor = urllib.parse.urlsplit(s)
-    path = urllib.parse.quote(path, '/%')
-    qs = urllib.parse.quote_plus(qs, ':&=')
-    return urllib.parse.urlunsplit((scheme, netloc, path, qs, anchor))
+    s = get_urlparsable_string(s)
+    scheme, netloc, path, qs, anchor = urlparse.urlsplit(s)
+    path = urlparse.quote(path, '/%')
+    qs = urlparse.quote_plus(qs, ':&=')
+    return urlparse.urlunsplit((scheme, netloc, path, qs, anchor))
 
 
 def do_host(
