@@ -126,22 +126,6 @@ class SysMon(object):
             time.sleep(self._update_interval)
 
 
-class SystemInfoCollector(object):
-
-    """Deprecated class, used in old projects"""
-
-    def __init__(self):
-        super(SystemInfoCollector, self).__init__()
-
-    def get_system_info(self):
-        return {
-            'cpu': sysstat.read_cpu_usage(),
-            'memory': sysstat.read_mem_usage(),
-            'storage': sysstat.read_disk_usage(),
-            'network': sysstat.read_network_usage(),
-        }
-
-
 def main():
     # configure logging
     log_format = '[%(levelname)s]-%(funcName)s: %(message)s --- %(asctime)s'

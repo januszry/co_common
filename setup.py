@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="cocommon",
-    version="0.9.5",
+    version="0.9.6",
     packages=find_packages(),
     zip_safe=False,
 
@@ -27,4 +27,6 @@ setup(
                       "paramiko>=1.15.2",
                       "pexpect>=3.3",
                       "ujson>=1.33",
+                      "xmltodict>=0.9.2",
+                      "lxml>=3.4.4",
                       "hexdump>=3.2"])
