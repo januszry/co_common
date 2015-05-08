@@ -5,11 +5,13 @@ PY3 = sys.version_info.major == 3
 
 if PY3:
     import urllib.parse as urlparse
+    import subprocess
 else:
     import urlparse
     import urllib
     urlparse.quote = urllib.quote
     urlparse.quote_plus = urllib.quote_plus
+    import subprocess32 as subprocess
 
 
 def get_urlparsable_string(s):
@@ -34,4 +36,4 @@ def get_urlparsable_string(s):
     return s
 
 
-__all__ = ['urlparse', 'get_urlparsable_string']
+__all__ = ['urlparse', 'get_urlparsable_string', 'subprocess']

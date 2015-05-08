@@ -116,7 +116,7 @@ def is_ascii(s):
 
 
 def url_fix(s):
-    """Get a valid URL. Only for PY3.
+    """Get a valid URL.
 
     Sometimes you get an URL by a user that just isn't a real
     URL because it contains unsafe characters like ' ' and so on.  This

@@ -3,7 +3,6 @@
 import logging
 import json
 import os
-import subprocess
 import traceback
 import argparse
 import time
@@ -11,6 +10,7 @@ import pprint
 import xml.etree.ElementTree as ET
 
 from ..utils import tricks
+from ..utils.compat import subprocess
 
 WEIGHT_OF_CODEC = {
     'aac': 1.2,
