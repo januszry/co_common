@@ -6,10 +6,10 @@ import logging
 import logging.handlers
 import os
 import time
-import subprocess
 import traceback
 
 from ..utils import tricks
+from ..utils.compat import subprocess, PY3
 
 
 NFRAMES_DEFAULT = 500 << 10
@@ -23,8 +23,7 @@ class WavFile(object):
 
     Checks channels, if inverted, if onesided, volume and loudness
     :param fn: file name
-    :param n_tested_frames: number of tested frames
-    """
+    :param n_tested_frames: number of tested frames."""
 
     def __init__(self, fn, n_tested_frames=NFRAMES_DEFAULT):
         super(WavFile, self).__init__()
@@ -33,8 +32,6 @@ class WavFile(object):
         self.n_channels = None
         self.loudness = None
         self.loudness_range = None
-        self.loudness_range_low = None
-        self.loudness_range_high = None
         self.volume_mean = None
         self.volume_max = None
         self.n_valid_frames = None
@@ -62,8 +59,6 @@ class WavFile(object):
                  'Volume Max: {}'.format(self.volume_max),
                  'Loudness Integrated (LUFS): {}'.format(self.loudness),
                  'Loudness Range: {}'.format(self.loudness_range),
-                 'Loudness Range Low: {}'.format(self.loudness_range_low),
-                 'Loudness Range High: {}'.format(self.loudness_range_high),
                  ]
         return '\n'.join(slist)
 
@@ -72,8 +67,6 @@ class WavFile(object):
         """A dictionary description of wave file"""
         return {'wav_loudness': self.loudness,
                 'wav_loudness_range': self.loudness_range,
-                'wav_loudness_range_high': self.loudness_range_high,
-                'wav_loudness_range_low': self.loudness_range_low,
                 'wav_volume_max': self.volume_max,
                 'wav_volume_mean': self.volume_mean,
                 'wav_inverted_frames': self.n_inverted_frames,
@@ -131,6 +124,99 @@ class WavFile(object):
             return False
         return self.n_valid_frames <= self.n_tested_frames >> 10
 
+    def _get_wave_info(self):
+        f = wave.open(self._fn, 'rb')
+        info = {}
+        info['n_channels'] = f.getnchannels()
+        info['n_sample_bits'] = f.getsampwidth()
+        info['n_frames'] = f.getnframes()
+        info['frame_rate'] = f.getframerate()
+        info['compression_type'] = f.getcomptype()
+        info['compression_name'] = f.getcompname()
+        return info
+
+    def _judge_frame_inverted(self, left_data, right_data, _max):
+        """Judge if frame is inverted.
+
+        left_data and right_data are all unsigned decimal numbers
+        if data is larger than _max, its wave is in negative direction"""
+        # if left and right data are in the same direction
+        if (left_data >= _max and right_data >= _max) or \
+                (left_data < _max and right_data < _max):
+            return False
+        if _max * 2 - (left_data + right_data) <= INVERT_BOUND_DEFAULT:
+            return True
+        return False
+
+    def _judge_frame_onesided(self, left_data_abs, right_data_abs):
+        """Judge if one channel is much louder than the other.
+
+        left_data_abs and right_data_abs are both abs(
+        signed number of left_data and right_data)"""
+        if left_data_abs >> 2 > right_data_abs:
+            return 'LL'
+        elif right_data_abs >> 2 > left_data_abs:
+            return 'RR'
+        return None
+
+    def _get_volume(self, timeout=30):
+        """Get volume with ffmpeg filter volumedetect.
+
+        Return [<mean_volume>, <max_volume>]."""
+        cmd = ['ffmpeg', '-i', self._fn, '-af',
+               'volumedetect', '-f', 'null', '/dev/null']
+        self._logger.info(
+            'Checking volume of %s with ffmpeg and volumedetect filter',
+            self._fn)
+        try:
+            output = subprocess.check_output(
+                cmd, timeout=timeout, stderr=subprocess.STDOUT).splitlines()
+            for line in output:
+                if isinstance(line, bytes):
+                    line = line.decode('utf-8')
+                line = line.rstrip()
+                if 'mean_volume: ' in line:
+                    vmean = float(line.split()[-2])
+                elif 'max_volume: ' in line:
+                    vmax = float(line.split()[-2])
+            return [vmean, vmax]
+        except:
+            self._logger.warning(traceback.format_exc())
+            return [None] * 2
+
+    def _get_volume_lufs(self, timeout=30):
+        """Get volume with EBU-r128.
+
+        Return [<intergrated>, <range>]."""
+        frame_tags = [
+            'lavfi.r128.I',
+            'lavfi.r128.LRA',
+            'lavfi.r128.low',
+            'lavfi.r128.high',
+        ]
+        cmd = [
+            'ffprobe', '-v', 'error', '-of', 'compact=p=0:nk=1',
+            '-show_entries', 'frame_tags={}'.format(','.join(frame_tags)),
+            '-f', 'lavfi', 'amovie={},ebur128=metadata=1'.format(self._fn)]
+        print(' '.join(cmd))
+        self._logger.info(
+            'Checking loudness of %s with ffmpeg and ebur128 filter', self._fn)
+        try:
+            output = subprocess.check_output(cmd, timeout=timeout)
+        except:
+            self._logger.warning(traceback.format_exc())
+            return [None] * 4
+
+        for line in output.splitlines():
+            sline = line.rstrip()
+            if sline:
+                tmp = sline
+        self._logger.info("Last line of get_volume: %s", tmp)
+        try:
+            return [float(i) for i in tmp.split('|')]
+        except TypeError:
+            return [float(i) for i in tmp.decode('utf-8').split('|')]
+
     def check_wave_file(self, check_volume=False, check_loudness=False,
                         loud_bound=LOUD_BOUND_DEFAULT, timeout=30):
         """Main entrance.
@@ -146,14 +232,14 @@ class WavFile(object):
             self._logger.warning("No such file: %s", self._fn)
             return
         wave_f = wave.open(self._fn, 'rb')
-        wave_info = get_info(wave_f)
+        wave_info = self._get_wave_info()
         self.n_channels = wave_info['n_channels']
 
         if check_volume:
-            (self.volume_mean, self.volume_max) = get_volume(self._fn, timeout)
+            (self.volume_mean, self.volume_max) = self._get_volume(timeout)
         if check_loudness:
-            (self.loudness, self.loudness_range, self.loudness_range_low,
-             self.loudness_range_high) = get_volume_lufs(self._fn, timeout)
+            (self.loudness, self.loudness_range) = self._get_volume_lufs(
+                timeout)
 
         if self.n_channels != 2:
             self._logger.warning(
@@ -167,7 +253,7 @@ class WavFile(object):
 
         if not self.n_tested_frames or \
                 self.n_tested_frames > wave_info[
-                        'n_frames'] - SKIP_FRAMES_DEFAULT:
+                    'n_frames'] - SKIP_FRAMES_DEFAULT:
             self.n_tested_frames = wave_info['n_frames'] - SKIP_FRAMES_DEFAULT
 
         wave_f.readframes(SKIP_FRAMES_DEFAULT)
@@ -182,12 +268,18 @@ class WavFile(object):
         n_ll_frames = 0
         n_rr_frames = 0
 
+        def get_int(x):
+            if PY3:
+                if not isinstance(x, int):
+                    return int(x)
+                return x
+            else:
+                if not isinstance(x, int):
+                    return ord(x)
+                return x
+
         for i in range(self.n_tested_frames):
             frame = wave_f.readframes(1)
-            if isinstance(frame, str):
-                get_int = lambda x: get_int(x)
-            elif isinstance(frame, bytes):
-                get_int = lambda x: x
 
             if len(frame) == 0:
                 continue
@@ -217,10 +309,11 @@ class WavFile(object):
                     continue
                 n_valid_frames += 1
 
-                if _judge_frame_inverted(left_data, right_data, _max):
+                if self._judge_frame_inverted(left_data, right_data, _max):
                     n_inverted_frames += 1
 
-                onesided = _judge_frame_onesided(left_data_abs, right_data_abs)
+                onesided = self._judge_frame_onesided(
+                    left_data_abs, right_data_abs)
                 if onesided == 'LL':
                     n_ll_frames += 1
                 elif onesided == 'RR':
@@ -232,104 +325,37 @@ class WavFile(object):
         self.n_rr_frames = n_rr_frames
 
 
-def get_info(f):
-    info = {}
-    info['n_channels'] = f.getnchannels()
-    info['n_sample_bits'] = f.getsampwidth()
-    info['n_frames'] = f.getnframes()
-    info['frame_rate'] = f.getframerate()
-    info['compression_type'] = f.getcomptype()
-    info['compression_name'] = f.getcompname()
-    return info
-
-
-def _judge_frame_inverted(left_data, right_data, _max):
-    """Judge if frame is inverted.
-
-    left_data and right_data are all unsigned decimal numbers
-    if data is larger than _max, its wave is in negative direction"""
-    # if left and right data are in the same direction
-    if (left_data >= _max and right_data >= _max) or \
-            (left_data < _max and right_data < _max):
-        return False
-    if _max * 2 - (left_data + right_data) <= INVERT_BOUND_DEFAULT:
-        return True
-    return False
-
-
-def _judge_frame_onesided(left_data_abs, right_data_abs):
-    """Judge if one channel is much louder than the other.
-
-    left_data_abs and right_data_abs are both abs(
-    signed number of left_data and right_data)"""
-    if left_data_abs >> 2 > right_data_abs:
-        return 'LL'
-    elif right_data_abs >> 2 > left_data_abs:
-        return 'RR'
-    return None
-
-
 def get_volume(fn, timeout=30):
-    """Get volume with ffmpeg filter volumedetect"""
-    logger = logging.getLogger(__name__)
-    cmd = ['ffmpeg', '-i', fn, '-af',
-           'volumedetect', '-f', 'null', '/dev/null']
-    logger.info(
-        'Checking volume of %s with ffmpeg and volumedetect filter', fn)
-    try:
-        output = subprocess.check_output(
-            cmd, timeout=timeout, stderr=subprocess.STDOUT).splitlines()
-        for line in output:
-            if isinstance(line, bytes):
-                line = line.decode('utf-8')
-            line = line.rstrip()
-            if 'mean_volume: ' in line:
-                vmean = float(line.split()[-2])
-            elif 'max_volume: ' in line:
-                vmax = float(line.split()[-2])
-        return [vmean, vmax]
-    except:
-        logger.warning(traceback.format_exc())
-        return [None] * 2
+    """Get volume with ffmpeg filter volumedetect.
+
+    Does not limit for wave files."""
+    wf = WavFile(fn)
+    return wf._get_volume(timeout)
 
 
 def get_volume_lufs(fn, timeout=30):
-    """Get volume with EBU-r128"""
-    logger = logging.getLogger(__name__)
-    cmd = [
-        'ffprobe', '-v', 'error', '-of', 'compact=p=0:nk=1', '-show_entries',
-        'frame_tags=lavfi.r128.I,lavfi.r128.LRA,lavfi.r128.LRA.low,lavfi.r128.LRA.high',
-        '-f', 'lavfi', 'amovie={},ebur128=metadata=1'.format(fn)]
-    logger.info('Checking loudness of %s with ffmpeg and ebur128 filter', fn)
-    try:
-        output = subprocess.check_output(cmd, timeout=timeout)
-    except:
-        logger.warning(traceback.format_exc())
-        return [None] * 4
+    """Get volume with EBU-r128.
 
-    for line in output.splitlines():
-        sline = line.rstrip()
-        if sline:
-            tmp = sline
-    logger.info("Last line of get_volume: %s", tmp)
-    try:
-        return [float(i) for i in tmp.split('|')]
-    except TypeError:
-        return [float(i) for i in tmp.decode('utf-8').split('|')]
+    Does not limit for wave files."""
+    wf = WavFile(fn)
+    return wf._get_volume_lufs(timeout)
 
 
 def generate_wav_file(src, fn, input_options=[], output_options=[],
-                      retry_times=5, timeout=30):
+                      retry_times=5, timeout=30, complete=False):
     """Generate wav file with FFMPEG.
 
-    from <src>, with <input_options> into <fn>"""
+    from <src>, with <input_options> into <fn>.
+    If complete == True and no -t is in tmp_output_options,
+        convert whole src (which may be infinite for a live source)."""
+
     tmp_fn = '{}_{}'.format(fn, int(time.time()))
     tmp_input_options = list(input_options)
     tmp_output_options = list(output_options)
     if '-aframes' not in tmp_output_options \
             and '-frames:a' not in tmp_output_options \
             and '-fs' not in tmp_output_options:
-        if '-t' not in tmp_output_options:
+        if '-t' not in tmp_output_options and not complete:
             tmp_output_options += ['-t', '7']
         if 'asetpts=FRAME_RATE' not in tmp_output_options:
             tmp_output_options += ['-af', 'asetpts=FRAME_RATE']
@@ -342,8 +368,8 @@ def generate_wav_file(src, fn, input_options=[], output_options=[],
     cmd = ['ffmpeg', '-y'] + tmp_input_options + ['-i', src] + \
         tmp_output_options + ['-f', 'wav', '-map_metadata', '-1', tmp_fn]
     tricks.retry(
-            retry_times, tricks.run_cmd_to_generate_files, cmd,
-            [tmp_fn], poll_interval=1, timeout=timeout)
+        retry_times, tricks.run_cmd_to_generate_files, cmd,
+        [tmp_fn], poll_interval=1, timeout=timeout)
     os.rename(tmp_fn, fn)
 
 
