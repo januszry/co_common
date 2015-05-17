@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="cocommon",
-    version="0.9.7",
+    version="0.9.8",
     packages=find_packages(),
     zip_safe=False,
 
@@ -19,8 +19,6 @@ setup(
     platforms="Independant",
     url="",
     entry_points={'console_scripts': [
-        'auprober=cocommon.audio.auprober:main',
-        'wavanalyze=cocommon.audio.wavfile:main',
         ]},
 
     install_requires=["requests>=2.3.0",

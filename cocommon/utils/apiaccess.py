@@ -48,10 +48,10 @@ class ApiAccess(object):
         else:
             expire_time = 86400
         resource_list = ujson.loads(
-                tricks.request_url_and_cache_result(
-                    self._api_res_list,
-                    cache_fn=self._resource_data_cache,
-                    expire_time=expire_time))['data']
+            tricks.request_url_and_cache_result(
+                self._api_res_list,
+                cache_fn=self._resource_data_cache,
+                expire_time=expire_time))['data']
 
         def valid(resource):
             for i in exclude_conditions:

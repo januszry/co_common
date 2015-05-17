@@ -2,12 +2,6 @@
 
 Consists of the following parts:
 
-## Audio Tools (audio)
-* auconverter.py - converters, now only aac2m4a converter
-* auprober.py - prober with ffmpeg and mediainfo
-* wavfile.py - wave file analyzer
-* id3taggen.py - text id3tagger
-
 ## Quick Config (quick_config)
 * config_log.py - log parser
 * daemonize.py - unix daemon maker
@@ -22,5 +16,7 @@ Consists of the following parts:
 * weixin.py (wechat)
 
 ## Other utilities (utils)
+* compat.py - python 2 / 3 compatible imports
 * parser.py - parser to parse playlists, xml / html content and plaintexts
 * tricks.py - many tricks, check the content
+* rst_gen.py - restructuredText generator
