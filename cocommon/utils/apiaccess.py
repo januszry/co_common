@@ -8,6 +8,8 @@ import time
 import os
 import pickle
 import requests
+import logging
+import traceback
 
 import ujson
 
@@ -28,6 +30,7 @@ class ApiAccess(object):
         self._api_channel_list_under_category = api_channel_list_under_category
         self._resource_data_cache = resource_data_cache
         self._channel_data_cache = channel_data_cache
+        self._logger = logging.getLogger(__name__)
 
         self._expire_time = expire_time
 
@@ -70,6 +73,7 @@ class ApiAccess(object):
                     resource['parentcatname'] = channel['parentcatname']
                     resource['channel_id'] = channel['id']
                 except KeyError:
+                    self._logger.warning(traceback.format_exc())
                     resource['catname'] = 'Unknown'
                     resource['parentcatname'] = 'Unknown'
                     resource['channel_id'] = 'Unknown'
@@ -89,6 +93,7 @@ class ApiAccess(object):
             resource['parentcatname'] = channel['parentcatname']
             resource['channel_id'] = channel['id']
         except KeyError:
+            self._logger.warning(traceback.format_exc())
             resource['catname'] = 'Unknown'
             resource['parentcatname'] = 'Unknown'
             resource['channel_id'] = 'Unknown'
@@ -129,6 +134,8 @@ class ApiAccess(object):
                             status=status,
                             category_id=category_id)).json()['data']
                     for channel in tmp_channel_list:
+                        if 'res_id' not in channel:
+                            continue
                         channel['catname'] = j['name']
                         channel['parentcatname'] = parentcatname
                         channel['status'] = status

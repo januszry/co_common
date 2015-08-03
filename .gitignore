@@ -1,0 +1,5 @@
+build/*
+cocommon.egg-info/*
+cocommon/__pycache__/*
+cocommon/utils/__pycache__/*
+dist/*
