@@ -85,7 +85,7 @@ def request_url_and_cache_result(url, method='GET', data=None,
         ret = getattr(requests, method.lower())(url)
         ret = requests.get(url)
     ret.close()
-    logger.info("Repuesting %s took time % seconds",
+    logger.info("Requesting %s took time % seconds",
                 url, time.time() - start_time)
     if ret.status_code == 200:
         data = ret.text
