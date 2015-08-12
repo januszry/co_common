@@ -1,11 +1,25 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
 
+import sys
 from setuptools import setup, find_packages
+PY3 = sys.version_info.major == 3
+
+requirements = ["requests>=2.3.0",
+                "paramiko>=1.15.2",
+                "pexpect>=3.3",
+                "ujson>=1.33",
+                "xmltodict>=0.9.2",
+                "lxml>=3.4.4",
+                "hexdump>=3.2"]
+if PY3:
+    requirements.append("osspy3k>=0.4.0")
+else:
+    requirements.append("oss")
 
 setup(
     name="cocommon",
-    version="0.10.0",
+    version="0.10.1",
     packages=find_packages(),
     zip_safe=False,
 
@@ -21,10 +35,4 @@ setup(
     entry_points={'console_scripts': [
         ]},
 
-    install_requires=["requests>=2.3.0",
-                      "paramiko>=1.15.2",
-                      "pexpect>=3.3",
-                      "ujson>=1.33",
-                      "xmltodict>=0.9.2",
-                      "lxml>=3.4.4",
-                      "hexdump>=3.2"])
+    install_requires=requirements)

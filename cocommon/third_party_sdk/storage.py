@@ -110,6 +110,7 @@ class Oss(object):
         if not os.path.isfile(filename) or \
                 os.path.getsize(filename) != info.size:
             raise Exception("Download {} error".format(key))
+        return True
 
     def delete(self, key):
         """Delete remote file.
