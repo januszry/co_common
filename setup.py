@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="cocommon",
-    version="0.9.9",
+    version="0.10.0",
     packages=find_packages(),
     zip_safe=False,
 
