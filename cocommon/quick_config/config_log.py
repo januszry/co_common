@@ -12,6 +12,7 @@ def config_log(log_dir, log_file, log_level='INFO',
     """Config a default logger.
 
     Will always create log files rotated by day.
+
     :param log_dir: log directory
     :param log_file: basename of log file under log_dir
     :param log_level: DEBUG | INFO | WARNING | ERROR | CRITICAL
