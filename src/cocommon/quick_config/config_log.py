@@ -7,8 +7,10 @@ import logging.handlers
 
 
 def config_log(log_dir, log_file, log_level='INFO',
-               back_count=7, name="", enable_stream_handler=True,
-               multithreading=False, multiprocessing=False, log_format=None):
+               rotate=True, back_count=7, name="",
+               enable_stream_handler=True,
+               multithreading=False, multiprocessing=False,
+               log_format=None):
     """Config a default logger.
 
     Will always create log files rotated by day.
@@ -16,7 +18,8 @@ def config_log(log_dir, log_file, log_level='INFO',
     :param log_dir: log directory
     :param log_file: basename of log file under log_dir
     :param log_level: DEBUG | INFO | WARNING | ERROR | CRITICAL
-    :param back_count: number of backup logs archived
+    :param rotate: boolean to enable log rotation
+    :param back_count: number of rotated logs to keep
     :param name: logger name space
     :param enable_stream_handler: if True, add StreamHandler
     :param multithreading: add threadId and threadName in log format
@@ -34,10 +37,13 @@ def config_log(log_dir, log_file, log_level='INFO',
         log_format += '<%(module)s>-%(funcName)s: %(message)s --- %(asctime)s'
         log_formatter = logging.Formatter(log_format)
 
-    loghandler_file_rotated = logging.handlers.TimedRotatingFileHandler(
-        log_file, when='midnight', interval=1, backupCount=back_count)
-    loghandler_file_rotated.setFormatter(log_formatter)
-    loghandler_file_rotated.setLevel(getattr(logging, log_level.upper(), None))
+    if rotate:
+        loghandler_file = logging.handlers.TimedRotatingFileHandler(
+            log_file, when='midnight', interval=1, backupCount=back_count)
+    else:
+        loghandler_file = logging.FileHandler(log_file)
+    loghandler_file.setFormatter(log_formatter)
+    loghandler_file.setLevel(getattr(logging, log_level.upper(), None))
 
     if enable_stream_handler:
         loghandler_stream = logging.StreamHandler()
@@ -46,9 +52,28 @@ def config_log(log_dir, log_file, log_level='INFO',
 
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
-    logger.addHandler(loghandler_file_rotated)
+    logger.addHandler(loghandler_file)
     if enable_stream_handler:
         logger.addHandler(loghandler_stream)
+
+
+def add_one_time_file_handler(logger, log_dir, log_file, log_level='INFO'):
+    """Add a file handler to logger.
+
+    The log file created is not rotated
+
+    :param logger: the logger to add handler to
+    :param log_dir: log directory
+    :param log_file: basename of log file under log_dir
+    :param log_level: DEBUG | INFO | WARNING | ERROR | CRITICAL
+    """
+    log_format = '[%(levelname)s]'
+    log_format += '<%(module)s>-%(funcName)s: %(message)s --- %(asctime)s'
+    log_formatter = logging.Formatter(log_format)
+    new_handler = logging.FileHandler(os.path.join(log_dir, log_file))
+    new_handler.setFormatter(log_formatter)
+    new_handler.setLevel(getattr(logging, log_level.upper()))
+    logger.addHandler(new_handler)
 
 
 if __name__ == '__main__':
