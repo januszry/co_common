@@ -104,7 +104,7 @@ class HTTPHandlerWithExtraMessage(logging.handlers.HTTPHandler):
 
 
 def add_one_time_http_handler(
-        remote_http_server, remote_http_path, logger, extra_message=None,
+        logger, remote_http_server, remote_http_path, extra_message=None,
         method='POST', log_level='INFO'):
     """Add a http handler to logger.
 
