@@ -1,5 +1,5 @@
-build/*
-cocommon.egg-info/*
-cocommon/__pycache__/*
-cocommon/utils/__pycache__/*
-dist/*
+src/build/*
+src/cocommon.egg-info/*
+src/cocommon/__pycache__/*
+src/cocommon/utils/__pycache__/*
+src/dist/*

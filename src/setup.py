@@ -20,7 +20,7 @@ else:
 
 setup(
     name="cocommon",
-    version="0.10.2",
+    version="0.11.0",
     packages=find_packages(),
     zip_safe=False,
 
