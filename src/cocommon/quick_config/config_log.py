@@ -7,7 +7,7 @@ import logging.handlers
 
 
 def config_log(log_dir=None, log_file=None, log_level='INFO',
-               rotate=True, back_count=7, name="",
+               rotate=True, back_count=7, name=None,
                enable_stream_handler=True,
                multithreading=False, multiprocessing=False,
                log_format=None):
@@ -58,7 +58,12 @@ def config_log(log_dir=None, log_file=None, log_level='INFO',
         loghandler_stream.setLevel(logging.DEBUG)
 
     logger = logging.getLogger(name)
+    # cleanup old handlers
+    for h in logger.handlers:
+        h.close()
+    logger.handlers = []
     logger.setLevel(logging.DEBUG)
+
     if log_file is not None:
         logger.addHandler(loghandler_file)
     if enable_stream_handler:
@@ -84,6 +89,40 @@ def add_one_time_file_handler(logger, log_dir, log_file, log_level='INFO'):
     new_handler.setFormatter(log_formatter)
     new_handler.setLevel(getattr(logging, log_level.upper()))
     logger.addHandler(new_handler)
+    return logger
+
+
+class HTTPHandlerWithExtraMessage(logging.handlers.HTTPHandler):
+    _extra_message = None
+
+    def set_extra_message(self, msg):
+        self._extra_message = msg
+
+    def mapLogRecord(self, record):
+        record.extra_message = self._extra_message
+        return record.__dict__
+
+
+def add_one_time_http_handler(
+        remote_http_server, remote_http_path, logger, extra_message=None,
+        method='POST', log_level='INFO'):
+    """Add a http handler to logger.
+
+    The log file created is not rotated
+
+    :param remote_http_server: host:port without protocol
+    :param remote_http_path: path like '/'
+    :param logger: logger to add new handler to
+    :param extra_message: extra message to send with every log record
+    :param log_level: DEBUG | INFO | WARNING | ERROR | CRITICAL
+    """
+
+    new_handler = HTTPHandlerWithExtraMessage(
+        remote_http_server, remote_http_path, method)
+    new_handler.set_extra_message(extra_message)
+    new_handler.setLevel(getattr(logging, log_level.upper()))
+    logger.addHandler(new_handler)
+    return logger
 
 
 if __name__ == '__main__':
