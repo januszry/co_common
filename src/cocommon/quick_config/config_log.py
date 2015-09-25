@@ -49,8 +49,8 @@ def config_log(log_dir=None, log_file=None, log_level='INFO',
         else:
             loghandler_file = logging.FileHandler(log_file)
 
-    loghandler_file.setFormatter(log_formatter)
-    loghandler_file.setLevel(getattr(logging, log_level.upper(), None))
+        loghandler_file.setFormatter(log_formatter)
+        loghandler_file.setLevel(getattr(logging, log_level.upper(), None))
 
     if enable_stream_handler:
         loghandler_stream = logging.StreamHandler()
@@ -59,9 +59,12 @@ def config_log(log_dir=None, log_file=None, log_level='INFO',
 
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
-    logger.addHandler(loghandler_file)
+    if log_file is not None:
+        logger.addHandler(loghandler_file)
     if enable_stream_handler:
         logger.addHandler(loghandler_stream)
+
+    return logger
 
 
 def add_one_time_file_handler(logger, log_dir, log_file, log_level='INFO'):
