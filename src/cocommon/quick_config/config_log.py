@@ -110,8 +110,6 @@ def add_one_time_http_handler(
         method='POST', log_level='INFO'):
     """Add a http handler to logger.
 
-    The log file created is not rotated
-
     :param remote_http_server: host:port without protocol
     :param remote_http_path: path like '/'
     :param logger: logger to add new handler to
@@ -129,14 +127,24 @@ def add_one_time_http_handler(
 
 def add_fluent_logger_handler(
         logger, tag, host='127.0.0.1', port=24224, extra_message=None):
+    """Add a fluent-logger to logger.
+
+    :param tag: tag of fluent-logger
+    :param host: host of fluent-logger server
+    :param port: port number of fluent-logger server
+    :param extra_message: extra message to send with log message
+        can be str or dict
+    """
     custom_format = {
         'host': '%(hostname)s',
         'level': '%(levelname)s',
         'where': '%(module)s.%(funcName)s',
         'stack_trace': '%(exc_text)s',
     }
-    if extra_message is not None:
-        custom_format['extra_message'] = extra_message
+    if isinstance(extra_message, dict):
+        custom_format.update(extra_message)
+    else:
+        custom_format['extra_message'] = str(extra_message)
     h = fluent.handler.FluentHandler(tag, host=host, port=port)
     formatter = fluent.handler.FluentRecordFormatter(custom_format)
     h.setFormatter(formatter)
