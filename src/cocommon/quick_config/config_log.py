@@ -140,6 +140,7 @@ def add_fluent_logger_handler(
         'level': '%(levelname)s',
         'where': '%(module)s.%(funcName)s',
         'stack_trace': '%(exc_text)s',
+        'formatted_message': '%(message)s',
     }
     if isinstance(extra_message, dict):
         custom_format.update(extra_message)
