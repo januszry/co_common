@@ -12,6 +12,7 @@ requirements = ["requests>=2.3.0",
                 "xmltodict>=0.9.2",
                 "hexdump>=3.2",
                 "lxml>=3.4.4",
+                "fluent-logger>=0.4.0",
                 ]
 if PY3:
     requirements.append("osspy3k>=0.4.0")
@@ -20,7 +21,7 @@ else:
 
 setup(
     name="cocommon",
-    version="0.12.1",
+    version="0.13.0",
     packages=find_packages(),
     zip_safe=False,
 

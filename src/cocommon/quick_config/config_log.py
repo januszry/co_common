@@ -5,6 +5,8 @@ import time
 import logging
 import logging.handlers
 
+import fluent.handler
+
 
 def config_log(log_dir=None, log_file=None, log_level='INFO',
                rotate=True, back_count=7, name=None,
@@ -122,6 +124,23 @@ def add_one_time_http_handler(
     new_handler.set_extra_message(extra_message)
     new_handler.setLevel(getattr(logging, log_level.upper()))
     logger.addHandler(new_handler)
+    return logger
+
+
+def add_fluent_logger_handler(
+        logger, tag, host='127.0.0.1', port=24224, extra_message=None):
+    custom_format = {
+        'host': '%(hostname)s',
+        'level': '%(levelname)s',
+        'where': '%(module)s.%(funcName)s',
+        'stack_trace': '%(exc_text)s',
+    }
+    if extra_message is not None:
+        custom_format['extra_message'] = extra_message
+    h = fluent.handler.FluentHandler(tag, host=host, port=port)
+    formatter = fluent.handler.FluentRecordFormatter(custom_format)
+    h.setFormatter(formatter)
+    logger.addHandler(h)
     return logger
 
 
