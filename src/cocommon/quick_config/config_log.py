@@ -6,6 +6,7 @@ import logging
 import logging.handlers
 
 import fluent.handler
+import raven.handlers.logging
 
 
 def config_log(log_dir=None, log_file=None, log_level='INFO',
@@ -110,6 +111,7 @@ def add_one_time_http_handler(
         method='POST', log_level='INFO'):
     """Add a http handler to logger.
 
+    :param logger: the logger to add handler to
     :param remote_http_server: host:port without protocol
     :param remote_http_path: path like '/'
     :param logger: logger to add new handler to
@@ -126,14 +128,17 @@ def add_one_time_http_handler(
 
 
 def add_fluent_logger_handler(
-        logger, tag, host='127.0.0.1', port=24224, extra_message=None):
-    """Add a fluent-logger to logger.
+        logger, tag, host='127.0.0.1', port=24224,
+        extra_message=None, log_level='INFO'):
+    """Add a fluent-loghandler to logger.
 
+    :param logger: the logger to add handler to
     :param tag: tag of fluent-logger
     :param host: host of fluent-logger server
     :param port: port number of fluent-logger server
     :param extra_message: extra message to send with log message
         can be str or dict
+    :param log_level: DEBUG | INFO | WARNING | ERROR | CRITICAL
     """
     custom_format = {
         'host': '%(hostname)s',
@@ -149,6 +154,21 @@ def add_fluent_logger_handler(
     h = fluent.handler.FluentHandler(tag, host=host, port=port)
     formatter = fluent.handler.FluentRecordFormatter(custom_format)
     h.setFormatter(formatter)
+    h.setLevel(getattr(logging, log_level.upper()))
+    logger.addHandler(h)
+    return logger
+
+
+def add_sentry_handler(
+        logger, sentry_dsn, log_level='WARNING'):
+    """Add a sentry-loghandler to logger.
+
+    :param logger: the logger to add handler to
+    :param sentry_dsn: Sentry server DSN, see in Project -> Settings
+    :param log_level: DEBUG | INFO | WARNING | ERROR | CRITICAL
+    """
+    h = raven.handlers.logging.SentryHandler(sentry_dsn)
+    h.setLevel(getattr(logging, log_level.upper()))
     logger.addHandler(h)
     return logger
 
