@@ -146,6 +146,9 @@ def add_fluent_logger_handler(
         'where': '%(module)s.%(funcName)s',
         'stack_trace': '%(exc_text)s',
         'formatted_message': '%(message)s',
+        'full_message':
+        '[%(levelname)s] <%(module)s>.%(funcName)s'
+        ' \'%(message)s\' [%(asctime)s]',
     }
     if isinstance(extra_message, dict):
         custom_format.update(extra_message)
