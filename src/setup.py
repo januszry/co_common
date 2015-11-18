@@ -5,16 +5,14 @@ import sys
 from setuptools import setup, find_packages
 PY3 = sys.version_info.major == 3
 
-requirements = ["requests>=2.3.0",
-                "paramiko>=1.15.2",
-                "pexpect>=3.3",
-                "ujson>=1.33",
-                "xmltodict>=0.9.2",
-                "hexdump>=3.2",
-                "lxml>=3.4.4",
-                "fluent-logger>=0.4.0",
-                "raven>=5.8.1",
-                ]
+requirements = [
+    "requests>=2.3.0",
+    "paramiko>=1.15.2",
+    "pexpect>=3.3",
+    "ujson>=1.33",
+    "fluent-logger>=0.4.0",
+    "raven>=5.8.1",
+    ]
 if PY3:
     requirements.append("osspy3k>=0.4.0")
 else:
@@ -22,7 +20,7 @@ else:
 
 setup(
     name="cocommon",
-    version="0.13.4",
+    version="0.14.0",
     packages=find_packages(),
     zip_safe=False,
 
