@@ -43,6 +43,8 @@ def config_log(log_dir=None, log_file=None, log_level='INFO',
 
     if log_dir is None:
         log_dir = '.'
+    elif not os.path.isdir(log_dir):
+        os.makedirs(log_dir)
 
     if log_file is not None:
         log_file = os.path.join(log_dir, log_file)
